@@ -1,4 +1,3 @@
-
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -17,14 +16,22 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
     private final Random random = new Random();
 
     private int currentLevel = 1;
-    private final int ballX = WIDTH / 2;
-    private final int ballY = HEIGHT - 100;
+    private final int centerX = WIDTH / 2;
+    private final int baseBallY = HEIGHT - 110;
     private final int ballR = 16;
+    private int ballY = baseBallY;
+    private double ballVelocity = 0;
+    private boolean dropping = false;
+
     private int layersBroken = 0;
     private int combo = 0;
     private long lastBreakMs = 0;
     private long invincibleUntil = 0;
     private boolean paused = false, gameOver = false, win = false;
+
+    private static final int RING_SIZE = 120;
+    private static final int RING_STROKE = 16;
+    private static final int HIT_ANGLE = 90; // phía dưới của vòng (tọa độ Swing)
 
     private final GameButton pauseBtn = new GameButton(WIDTH - 105, 18, 85, 38, "Pause");
     private final GameButton resumeBtn = new GameButton(WIDTH / 2 - 100, 300, 200, 48, "Resume");
@@ -57,17 +64,28 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
         new Timer(16, this).start();
     }
 
+    private Color randomPBColor() {
+        Color[] colors = new Color[]{
+                new Color(90, 200, 120),
+                new Color(70, 175, 240),
+                new Color(240, 200, 70),
+                new Color(170, 120, 255),
+                new Color(80, 220, 200)
+        };
+        return colors[random.nextInt(colors.length)];
+    }
+
     private void resetLevel(int lv) {
         currentLevel = lv;
         progress.lastLevel = lv;
         SaveManager.save(settings, progress);
 
         layers.clear();
+        int dangerArc = Math.min(36 + lv * 6, 120);
         for (int i = 0; i < 12 + lv * 4; i++) {
-            int y = HEIGHT - 160 - i * 52;
-            int pb = random.nextBoolean() ? 110 : 250;
-            int db = pb == 110 ? 250 : 110;
-            layers.add(new Layer(y, pb, db));
+            int y = HEIGHT - 170 - i * 56;
+            int dangerStart = random.nextInt(360);
+            layers.add(new Layer(y, dangerStart, dangerArc, randomPBColor()));
         }
 
         layersBroken = 0;
@@ -77,6 +95,9 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
         paused = false;
         gameOver = false;
         win = false;
+        ballY = baseBallY;
+        ballVelocity = 0;
+        dropping = false;
     }
 
     private Layer nearestLayer() {
@@ -85,16 +106,27 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
         return (best == null && !layers.isEmpty()) ? layers.get(0) : best;
     }
 
+    private boolean isDangerAtHit(Layer layer) {
+        int start = layer.dangerStartAngle;
+        int end = (start + layer.dangerArc) % 360;
+        if (start <= end) {
+            return HIT_ANGLE >= start && HIT_ANGLE <= end;
+        }
+        return HIT_ANGLE >= start || HIT_ANGLE <= end;
+    }
+
     private void hitAction() {
         if (gameOver || paused || win) return;
+        dropping = true;
+        ballVelocity = 13;
+
         Layer l = nearestLayer();
         if (l == null) return;
 
         long now = System.currentTimeMillis();
-        Rectangle pb = new Rectangle(l.pbX, l.y, 120, 22);
-        Rectangle db = new Rectangle(l.dbX, l.y, 120, 22);
+        boolean dangerHit = isDangerAtHit(l);
 
-        if (pb.contains(ballX, ballY) || now < invincibleUntil) {
+        if (!dangerHit || now < invincibleUntil) {
             layers.remove(l);
             layersBroken++;
             combo = (now - lastBreakMs <= 450) ? combo + 1 : 1;
@@ -112,8 +144,25 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
                     SaveManager.save(settings, progress);
                 }
             }
-        } else if (db.contains(ballX, ballY)) {
+        } else {
             gameOver = true;
+        }
+    }
+
+    private void updateBallPhysics() {
+        if (scene != Scene.GAME || paused || gameOver || win) return;
+
+        if (dropping) {
+            ballY += (int) ballVelocity;
+            ballVelocity -= 1.3;
+            if (ballY >= baseBallY) {
+                ballY = baseBallY;
+                dropping = false;
+                ballVelocity = 0;
+            }
+        } else {
+            double t = System.currentTimeMillis() / 140.0;
+            ballY = baseBallY + (int) (Math.sin(t) * 8);
         }
     }
 
@@ -130,7 +179,7 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
         }
     }
 
-    private void drawMenu(Graphics2D g2) { /* unchanged drawing */
+    private void drawMenu(Graphics2D g2) {
         g2.setColor(new Color(12, 14, 24)); g2.fillRect(0, 0, WIDTH, HEIGHT);
         g2.setColor(Color.WHITE); g2.setFont(new Font("Arial", Font.BOLD, 48)); g2.drawString("BALL FALL", 120, 150);
         g2.setFont(new Font("Arial", Font.PLAIN, 20));
@@ -163,16 +212,28 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
 
     private void drawGame(Graphics2D g2) {
         g2.setColor(new Color(15, 16, 28)); g2.fillRect(0, 0, WIDTH, HEIGHT);
+
         g2.setColor(new Color(50, 58, 80));
-        for (int x : new int[]{90, 230, 370}) g2.fillRect(x, 70, 20, HEIGHT - 90);
+        g2.fillRect(centerX - 16, 70, 32, HEIGHT - 90);
+
+        Stroke oldStroke = g2.getStroke();
+        g2.setStroke(new BasicStroke(RING_STROKE, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
 
         for (Layer l : layers) {
-            g2.setColor(new Color(90, 200, 120)); g2.fillRoundRect(l.pbX, l.y, 120, 22, 5, 5);
-            g2.setColor(new Color(200, 70, 80)); g2.fillRoundRect(l.dbX, l.y, 120, 22, 5, 5);
+            int ringX = centerX - RING_SIZE / 2;
+            int ringY = l.y - RING_SIZE / 2;
+
+            g2.setColor(l.pbColor);
+            g2.drawArc(ringX, ringY, RING_SIZE, RING_SIZE, 0, 360);
+
+            g2.setColor(new Color(220, 45, 45));
+            g2.drawArc(ringX, ringY, RING_SIZE, RING_SIZE, l.dangerStartAngle, l.dangerArc);
         }
+        g2.setStroke(oldStroke);
 
         g2.setColor(System.currentTimeMillis() < invincibleUntil ? new Color(255, 210, 50) : new Color(240, 240, 245));
-        g2.fillOval(ballX - ballR, ballY - ballR, ballR * 2, ballR * 2);
+        g2.fillOval(centerX - ballR, ballY - ballR, ballR * 2, ballR * 2);
+
         g2.setColor(Color.WHITE);
         g2.drawString("Level " + currentLevel + " | Broken " + layersBroken, 20, 35);
         pauseBtn.draw(g2);
@@ -239,7 +300,10 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
         repaint();
     }
 
-    @Override public void actionPerformed(ActionEvent e) { repaint(); }
+    @Override public void actionPerformed(ActionEvent e) {
+        updateBallPhysics();
+        repaint();
+    }
     @Override public void mousePressed(MouseEvent e) {}
     @Override public void mouseReleased(MouseEvent e) {}
     @Override public void mouseEntered(MouseEvent e) {}
