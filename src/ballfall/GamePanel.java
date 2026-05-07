@@ -9,8 +9,8 @@ import java.util.List;
 import java.util.Random;
 
 public class GamePanel extends JPanel implements MouseListener, KeyListener, ActionListener {
-    public static final int WIDTH = 1920;
-    public static final int HEIGHT = 1080;
+    public static final int WIDTH = 640;
+    public static final int HEIGHT = 360;
 
     private Scene scene = Scene.MENU;
     private final SettingsData settings = new SettingsData();
@@ -41,9 +41,9 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
     private final GameButton pauseSettingBtn = new GameButton(WIDTH / 2 - 100, 360, 200, 48, "Setting");
     private final GameButton pauseExitBtn = new GameButton(WIDTH / 2 - 100, 420, 200, 48, "Exit");
 
-    private final GameButton menuPlay = new GameButton(WIDTH/2 - 140, 360, 280, 70, "Play");
-    private final GameButton menuLevel = new GameButton(WIDTH/2 - 140, 450, 280, 70, "Level");
-    private final GameButton menuSetting = new GameButton(WIDTH/2 - 140, 540, 280, 70, "Setting");
+    private final GameButton menuPlay = new GameButton(WIDTH/2 - 90, 120, 180, 42, "Play");
+    private final GameButton menuLevel = new GameButton(WIDTH/2 - 90, 170, 180, 42, "Level");
+    private final GameButton menuSetting = new GameButton(WIDTH/2 - 90, 220, 180, 42, "Setting");
     private final GameButton replayBtn = new GameButton(WIDTH / 2 - 100, HEIGHT / 2 + 20, 200, 48, "Replay");
     private final GameButton nextLevelBtn = new GameButton(WIDTH / 2 - 120, HEIGHT / 2 + 20, 240, 48, "Next Level");
 
@@ -77,10 +77,25 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
         new Timer(16, this).start();
     }
 
+    private BufferedImage tryLoadImage(String name) {
+        String[] paths = new String[]{name, "./" + name, "../" + name, "../../" + name, "assets/" + name};
+        for (String p : paths) {
+            try {
+                File f = new File(p);
+                if (f.exists()) return ImageIO.read(f);
+            } catch (Exception ignored) {}
+        }
+        try {
+            java.net.URL url = getClass().getResource("/" + name);
+            if (url != null) return ImageIO.read(url);
+        } catch (Exception ignored) {}
+        return null;
+    }
+
     private void loadBackgrounds() {
-        try { bgHome = ImageIO.read(new File("BG1.png")); } catch (Exception ignored) {}
-        try { bgMenu = ImageIO.read(new File("BG2.png")); } catch (Exception ignored) {}
-        try { bgGame = ImageIO.read(new File("BG3.png")); } catch (Exception ignored) {}
+        bgHome = tryLoadImage("BG1.png");
+        bgMenu = tryLoadImage("BG2.png");
+        bgGame = tryLoadImage("BG3.png");
     }
 
     private void drawBackground(Graphics2D g2, BufferedImage img, Color fallback) {
@@ -213,7 +228,7 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
 
     private void drawMenu(Graphics2D g2) {
         drawBackground(g2, bgHome, new Color(12, 14, 24));
-        g2.setColor(Color.WHITE); g2.setFont(new Font("Arial", Font.BOLD, 96)); g2.drawString("BALL FALL", WIDTH/2 - 260, 180);
+        g2.setColor(Color.WHITE); g2.setFont(new Font("Arial", Font.BOLD, 44)); g2.drawString("BALL FALL", WIDTH/2 - 120, 80);
         g2.setFont(new Font("Arial", Font.PLAIN, 20));
         menuPlay.draw(g2); menuLevel.draw(g2); menuSetting.draw(g2);
     }
@@ -245,30 +260,29 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
     private void drawGame(Graphics2D g2) {
         drawBackground(g2, bgGame, new Color(15, 16, 28));
 
-        g2.setColor(new Color(50, 58, 80));
-        g2.fillRect(centerX - 16, 70, 32, HEIGHT - 90);
+        GradientPaint colGradient = new GradientPaint(centerX - 18, 40, new Color(245,245,245), centerX + 18, 40, new Color(195,195,195));
+        g2.setPaint(colGradient);
+        g2.fillRoundRect(centerX - 18, 30, 36, HEIGHT - 50, 18, 18);
+        g2.setColor(new Color(255,255,255,130));
+        g2.fillRoundRect(centerX - 13, 35, 7, HEIGHT - 70, 8, 8);
 
         Stroke oldStroke = g2.getStroke();
-        g2.setStroke(new BasicStroke(RING_STROKE, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+        g2.setStroke(new BasicStroke(14, BasicStroke.CAP_BUTT, BasicStroke.JOIN_ROUND));
 
+        int idx = 0;
         for (Layer l : layers) {
-            int ringX = centerX - RING_SIZE / 2;
-            int ringY = l.y - RING_SIZE / 2;
+            double depth = Math.max(0.55, Math.min(1.0, (double) l.y / HEIGHT + 0.35));
+            int ringSize = (int) (120 * depth);
+            int ringX = centerX - ringSize / 2;
+            int ringY = l.y - ringSize / 2;
 
-            g2.setColor(new Color(0,0,0,80));
-            g2.drawArc(ringX + 3, ringY + 3, RING_SIZE, RING_SIZE, 0, 360);
-
-            g2.setColor(l.pbColor);
-            g2.drawArc(ringX, ringY, RING_SIZE, RING_SIZE, 0, 360);
-            g2.setColor(l.pbColor.brighter());
-            g2.drawArc(ringX - 1, ringY - 1, RING_SIZE, RING_SIZE, 210, 110);
-            g2.setColor(l.pbColor.darker());
-            g2.drawArc(ringX + 1, ringY + 1, RING_SIZE, RING_SIZE, 30, 140);
+            Color base = (idx % 2 == 0) ? new Color(240, 220, 20) : new Color(30, 30, 30);
+            g2.setColor(base);
+            g2.drawArc(ringX, ringY, ringSize, ringSize, 0, 360);
 
             g2.setColor(new Color(220, 45, 45));
-            g2.drawArc(ringX, ringY, RING_SIZE, RING_SIZE, (int) l.angle, l.dangerArc);
-            g2.setColor(new Color(255, 130, 130));
-            g2.drawArc(ringX - 1, ringY - 1, RING_SIZE, RING_SIZE, (int) l.angle, Math.max(8, l.dangerArc / 3));
+            g2.drawArc(ringX, ringY, ringSize, ringSize, (int) l.angle, l.dangerArc);
+            idx++;
         }
         g2.setStroke(oldStroke);
 
