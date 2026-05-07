@@ -105,11 +105,9 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
 
     private Color randomPBColor() {
         Color[] colors = new Color[]{
-                new Color(90, 200, 120),
-                new Color(70, 175, 240),
-                new Color(240, 200, 70),
-                new Color(170, 120, 255),
-                new Color(80, 220, 200)
+                new Color(245, 225, 30),
+                new Color(236, 210, 24),
+                new Color(255, 236, 70)
         };
         return colors[random.nextInt(colors.length)];
     }
@@ -266,29 +264,53 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
         g2.setColor(new Color(255,255,255,130));
         g2.fillRoundRect(centerX - 13, 35, 7, HEIGHT - 70, 8, 8);
 
-        Stroke oldStroke = g2.getStroke();
-        g2.setStroke(new BasicStroke(14, BasicStroke.CAP_BUTT, BasicStroke.JOIN_ROUND));
-
+        long nowMs = System.currentTimeMillis();
         int idx = 0;
         for (Layer l : layers) {
             double depth = Math.max(0.55, Math.min(1.0, (double) l.y / HEIGHT + 0.35));
-            int ringSize = (int) (120 * depth);
+            double wobble = Math.sin(nowMs / 140.0 + idx * 0.7) * 2.4;
+            int ringSize = (int) ((120 * depth) + wobble);
             int ringX = centerX - ringSize / 2;
-            int ringY = l.y - ringSize / 2;
+            int ringY = l.y - ringSize / 2 + (int) (Math.cos(nowMs / 180.0 + idx) * 1.3);
 
-            Color base = (idx % 2 == 0) ? new Color(240, 220, 20) : new Color(30, 30, 30);
-            g2.setColor(base);
+            // side wall (3D stack)
+            g2.setColor(new Color(38, 38, 38));
+            g2.fillOval(ringX - 3, ringY + 6, ringSize + 6, 16);
+
+            Stroke oldStroke = g2.getStroke();
+            g2.setStroke(new BasicStroke(14, BasicStroke.CAP_BUTT, BasicStroke.JOIN_ROUND));
+
+            // P.B ring
+            g2.setColor(l.pbColor.darker());
+            g2.drawArc(ringX + 1, ringY + 1, ringSize, ringSize, 0, 360);
+            g2.setColor(l.pbColor);
             g2.drawArc(ringX, ringY, ringSize, ringSize, 0, 360);
+            g2.setColor(new Color(255, 250, 120, 180));
+            g2.drawArc(ringX - 1, ringY - 1, ringSize, ringSize, 220, 90);
 
-            g2.setColor(new Color(220, 45, 45));
+            // D.B segment (dark like reference)
+            g2.setColor(new Color(18, 18, 18));
             g2.drawArc(ringX, ringY, ringSize, ringSize, (int) l.angle, l.dangerArc);
+            g2.setColor(new Color(80, 80, 80));
+            g2.drawArc(ringX + 1, ringY + 1, ringSize, ringSize, (int) l.angle, Math.max(8, l.dangerArc / 2));
+
+            g2.setStroke(oldStroke);
             idx++;
         }
-        g2.setStroke(oldStroke);
 
-        g2.setColor(System.currentTimeMillis() < invincibleUntil ? new Color(255, 210, 50) : new Color(240, 240, 245));
-        g2.fillOval(centerX - ballR, ballY - ballR, ballR * 2, ballR * 2);
+        // Ball with bounce/squash effect
+        double speedAbs = Math.abs(ballVelocity);
+        double squash = Math.min(0.35, speedAbs / 30.0);
+        int brx = (int) (ballR * (1.0 + squash));
+        int bry = (int) (ballR * (1.0 - squash * 0.8));
 
+        g2.setColor(new Color(20, 80, 150, 60));
+        g2.fillOval(centerX - brx + 2, ballY - bry + 6, brx * 2, bry * 2);
+        GradientPaint ballGrad = new GradientPaint(centerX - brx, ballY - bry, new Color(70, 210, 255), centerX + brx, ballY + bry, new Color(0, 110, 220));
+        g2.setPaint(ballGrad);
+        g2.fillOval(centerX - brx, ballY - bry, brx * 2, bry * 2);
+        g2.setColor(new Color(255,255,255,160));
+        g2.fillOval(centerX - brx/2, ballY - bry/2, brx/2, bry/2);
         g2.setColor(new Color(25, 30, 45, 220));
         g2.fillRoundRect(20, 16, 113, 31, 10, 10);
         g2.setColor(new Color(170, 190, 255));
