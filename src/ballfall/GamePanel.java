@@ -276,12 +276,12 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
         g2.fillOval(centerX - ballR, ballY - ballR, ballR * 2, ballR * 2);
 
         g2.setColor(new Color(25, 30, 45, 220));
-        g2.fillRoundRect(20, 16, 170, 46, 14, 14);
+        g2.fillRoundRect(20, 16, 113, 31, 10, 10);
         g2.setColor(new Color(170, 190, 255));
-        g2.drawRoundRect(20, 16, 170, 46, 14, 14);
+        g2.drawRoundRect(20, 16, 113, 31, 10, 10);
         g2.setColor(Color.WHITE);
-        g2.setFont(new Font("Arial", Font.BOLD, 22));
-        g2.drawString("LEVEL " + currentLevel, 42, 45);
+        g2.setFont(new Font("Arial", Font.BOLD, 15));
+        g2.drawString("LEVEL " + currentLevel, 30, 37);
 
         g2.setFont(new Font("Arial", Font.PLAIN, 18));
         g2.drawString("Broken: " + layersBroken, 220, 42);
