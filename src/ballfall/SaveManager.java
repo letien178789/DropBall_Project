@@ -1,7 +1,3 @@
-package ballfall.core;
-
-import ballfall.model.ProgressData;
-import ballfall.model.SettingsData;
 
 import java.io.*;
 import java.util.Properties;

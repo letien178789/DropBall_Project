@@ -1,5 +1,3 @@
-package ballfall.model;
-
 public class Layer {
     public final int y;
     public final int pbX;

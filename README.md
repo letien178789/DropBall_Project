@@ -1,40 +1,30 @@
 # BALL FALL (Java)
 
-Game BALL FALL viết bằng Java Swing, được tách thành nhiều lớp nhỏ để dễ mở rộng.
+Game BALL FALL viết bằng Java Swing và đã chỉnh lại để tránh lỗi import/package khi compile.
 
 ## Cấu trúc mã nguồn
 
-- `src/ballfall/BallFallGame.java`: điểm vào chương trình.
-- `src/ballfall/ui/GamePanel.java`: xử lý scene, render, input, gameplay.
-- `src/ballfall/ui/GameButton.java`: nút UI dùng lại.
-- `src/ballfall/model/*`: model nhỏ (`Scene`, `Layer`, `SettingsData`, `ProgressData`).
-- `src/ballfall/core/SaveManager.java`: đọc/ghi `save_state.properties`.
+Tất cả file `.java` nằm trong `src/ballfall/`:
+- `BallFallGame.java`: điểm vào chương trình.
+- `GamePanel.java`: scene, render, input, gameplay.
+- `GameButton.java`: nút UI dùng lại.
+- `Scene.java`, `Layer.java`, `SettingsData.java`, `ProgressData.java`: model.
+- `SaveManager.java`: đọc/ghi `save_state.properties`.
 
 ## Chạy game
 
-### 1) Cài Java Development Kit (JDK)
+> Nếu gặp lỗi `'javac' is not recognized...` thì cần cài JDK 17+ và mở terminal mới.
 
-Nếu gặp lỗi:
-
-`'javac' is not recognized as an internal or external command, operable program or batch file.`
-
-thì máy bạn chưa cài JDK hoặc chưa thêm JDK vào `PATH`.
-
-- Windows: cài **JDK 17 hoặc mới hơn** (Temurin/Oracle/OpenJDK).
-- Sau khi cài, mở terminal mới và kiểm tra:
-
+### Cách 1 (khuyến nghị)
 ```bash
-java -version
-javac -version
+javac src/ballfall/*.java
+java -cp src/ballfall BallFallGame
 ```
 
-> Cả hai lệnh đều phải chạy được.
-
-### 2) Compile và chạy
-
+### Cách 2 (khi đang đứng trong thư mục `src/ballfall`)
 ```bash
-javac src/ballfall/model/*.java src/ballfall/core/*.java src/ballfall/ui/*.java src/ballfall/BallFallGame.java
-java -cp src ballfall.BallFallGame
+javac BallFallGame.java
+java BallFallGame
 ```
 
 ## Lưu trạng thái

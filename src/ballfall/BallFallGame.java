@@ -1,6 +1,4 @@
-package ballfall;
 
-import ballfall.ui.GamePanel;
 
 import javax.swing.*;
 

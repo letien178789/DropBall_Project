@@ -1,5 +1,3 @@
-package ballfall.ui;
-
 import java.awt.*;
 
 public class GameButton {

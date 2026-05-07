@@ -1,7 +1,3 @@
-package ballfall.ui;
-
-import ballfall.core.SaveManager;
-import ballfall.model.*;
 
 import javax.swing.*;
 import java.awt.*;
