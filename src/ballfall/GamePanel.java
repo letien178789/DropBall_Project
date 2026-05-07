@@ -2,6 +2,9 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.ArrayList;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import javax.imageio.ImageIO;
 import java.util.List;
 import java.util.Random;
 
@@ -38,19 +41,25 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
     private final GameButton pauseSettingBtn = new GameButton(WIDTH / 2 - 100, 360, 200, 48, "Setting");
     private final GameButton pauseExitBtn = new GameButton(WIDTH / 2 - 100, 420, 200, 48, "Exit");
 
-    private final GameButton menuPlay = new GameButton(140, 260, 200, 52, "Play");
-    private final GameButton menuEnter = new GameButton(140, 330, 200, 52, "Vao game");
-    private final GameButton menuLevel = new GameButton(140, 400, 200, 52, "Menu Level");
-    private final GameButton menuSetting = new GameButton(140, 470, 200, 52, "Setting");
+    private final GameButton menuPlay = new GameButton(140, 300, 200, 52, "Play");
+    private final GameButton menuLevel = new GameButton(140, 370, 200, 52, "Level");
+    private final GameButton menuSetting = new GameButton(140, 440, 200, 52, "Setting");
+    private final GameButton replayBtn = new GameButton(WIDTH / 2 - 100, HEIGHT / 2 + 20, 200, 48, "Replay");
 
     private final GameButton backBtn = new GameButton(20, 20, 90, 38, "Back");
     private final List<GameButton> levelButtons = new ArrayList<>();
+
+    private BufferedImage bgHome;
+    private BufferedImage bgMenu;
+    private BufferedImage bgGame;
 
     public GamePanel() {
         setPreferredSize(new Dimension(WIDTH, HEIGHT));
         setFocusable(true);
         addMouseListener(this);
         addKeyListener(this);
+
+        loadBackgrounds();
 
         SaveManager.load(settings, progress);
         currentLevel = Math.max(1, Math.min(10, progress.lastLevel));
@@ -62,6 +71,17 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
         }
 
         new Timer(16, this).start();
+    }
+
+    private void loadBackgrounds() {
+        try { bgHome = ImageIO.read(new File("BG1.png")); } catch (Exception ignored) {}
+        try { bgMenu = ImageIO.read(new File("BG2.png")); } catch (Exception ignored) {}
+        try { bgGame = ImageIO.read(new File("BG3.png")); } catch (Exception ignored) {}
+    }
+
+    private void drawBackground(Graphics2D g2, BufferedImage img, Color fallback) {
+        if (img != null) g2.drawImage(img, 0, 0, WIDTH, HEIGHT, null);
+        else { g2.setColor(fallback); g2.fillRect(0, 0, WIDTH, HEIGHT); }
     }
 
     private Color randomPBColor() {
@@ -180,14 +200,14 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
     }
 
     private void drawMenu(Graphics2D g2) {
-        g2.setColor(new Color(12, 14, 24)); g2.fillRect(0, 0, WIDTH, HEIGHT);
+        drawBackground(g2, bgHome, new Color(12, 14, 24));
         g2.setColor(Color.WHITE); g2.setFont(new Font("Arial", Font.BOLD, 48)); g2.drawString("BALL FALL", 120, 150);
         g2.setFont(new Font("Arial", Font.PLAIN, 20));
-        menuPlay.draw(g2); menuEnter.draw(g2); menuLevel.draw(g2); menuSetting.draw(g2);
+        menuPlay.draw(g2); menuLevel.draw(g2); menuSetting.draw(g2);
     }
 
     private void drawLevelMenu(Graphics2D g2) {
-        g2.setColor(new Color(20, 22, 35)); g2.fillRect(0, 0, WIDTH, HEIGHT);
+        drawBackground(g2, bgMenu, new Color(20, 22, 35));
         g2.setColor(Color.WHITE); g2.setFont(new Font("Arial", Font.BOLD, 30)); g2.drawString("Level Menu", 170, 80);
         g2.setFont(new Font("Arial", Font.PLAIN, 20));
         backBtn.draw(g2);
@@ -202,7 +222,7 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
     }
 
     private void drawSetting(Graphics2D g2) {
-        g2.setColor(new Color(18, 16, 30)); g2.fillRect(0, 0, WIDTH, HEIGHT);
+        drawBackground(g2, bgMenu, new Color(18, 16, 30));
         g2.setColor(Color.WHITE); g2.setFont(new Font("Arial", Font.BOLD, 30)); g2.drawString("Setting", 190, 80);
         g2.setFont(new Font("Arial", Font.PLAIN, 20));
         backBtn.draw(g2);
@@ -211,7 +231,7 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
     }
 
     private void drawGame(Graphics2D g2) {
-        g2.setColor(new Color(15, 16, 28)); g2.fillRect(0, 0, WIDTH, HEIGHT);
+        drawBackground(g2, bgGame, new Color(15, 16, 28));
 
         g2.setColor(new Color(50, 58, 80));
         g2.fillRect(centerX - 16, 70, 32, HEIGHT - 90);
@@ -243,7 +263,10 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
             g2.drawString("INVINCIBLE: " + String.format("%.1f", (invincibleUntil - System.currentTimeMillis()) / 1000.0) + "s", 20, 60);
         }
 
-        if (gameOver) overlay(g2, "GAME OVER", "R: retry | M: level menu");
+        if (gameOver) {
+            overlay(g2, "GAME OVER", "M: level menu");
+            replayBtn.draw(g2);
+        }
         if (win) overlay(g2, "YOU WIN", "N: next level | M: level menu");
         if (paused) {
             g2.setColor(new Color(0, 0, 0, 160)); g2.fillRect(0, 0, WIDTH, HEIGHT);
@@ -262,7 +285,6 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
         Point p = e.getPoint();
         if (scene == Scene.MENU) {
             if (menuPlay.clicked(p)) { resetLevel(progress.lastLevel); scene = Scene.GAME; }
-            else if (menuEnter.clicked(p)) { resetLevel(currentLevel); scene = Scene.GAME; }
             else if (menuLevel.clicked(p)) scene = Scene.LEVEL_MENU;
             else if (menuSetting.clicked(p)) scene = Scene.SETTING;
         } else if (scene == Scene.LEVEL_MENU) {
@@ -272,7 +294,9 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
             if (backBtn.clicked(p)) scene = Scene.MENU;
             updateSlider(p);
         } else {
-            if (paused) {
+            if (gameOver && replayBtn.clicked(p)) {
+                resetLevel(currentLevel);
+            } else if (paused) {
                 if (resumeBtn.clicked(p)) paused = false;
                 else if (pauseSettingBtn.clicked(p)) scene = Scene.SETTING;
                 else if (pauseExitBtn.clicked(p)) { paused = false; scene = Scene.LEVEL_MENU; }
