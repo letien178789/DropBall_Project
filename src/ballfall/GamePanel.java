@@ -104,8 +104,9 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
         int dangerArc = Math.min(36 + lv * 6, 120);
         for (int i = 0; i < 12 + lv * 4; i++) {
             int y = HEIGHT - 170 - i * 56;
-            int dangerStart = random.nextInt(360);
-            layers.add(new Layer(y, dangerStart, dangerArc, randomPBColor()));
+            double startAngle = random.nextInt(360);
+            double speed = 0.8 + (currentLevel * 0.12) + random.nextDouble() * 0.8;
+            layers.add(new Layer(y, dangerArc, randomPBColor(), startAngle, speed));
         }
 
         layersBroken = 0;
@@ -127,7 +128,7 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
     }
 
     private boolean isDangerAtHit(Layer layer) {
-        int start = layer.dangerStartAngle;
+        int start = ((int) layer.angle % 360 + 360) % 360;
         int end = (start + layer.dangerArc) % 360;
         if (start <= end) {
             return HIT_ANGLE >= start && HIT_ANGLE <= end;
@@ -243,11 +244,20 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
             int ringX = centerX - RING_SIZE / 2;
             int ringY = l.y - RING_SIZE / 2;
 
+            g2.setColor(new Color(0,0,0,80));
+            g2.drawArc(ringX + 3, ringY + 3, RING_SIZE, RING_SIZE, 0, 360);
+
             g2.setColor(l.pbColor);
             g2.drawArc(ringX, ringY, RING_SIZE, RING_SIZE, 0, 360);
+            g2.setColor(l.pbColor.brighter());
+            g2.drawArc(ringX - 1, ringY - 1, RING_SIZE, RING_SIZE, 210, 110);
+            g2.setColor(l.pbColor.darker());
+            g2.drawArc(ringX + 1, ringY + 1, RING_SIZE, RING_SIZE, 30, 140);
 
             g2.setColor(new Color(220, 45, 45));
-            g2.drawArc(ringX, ringY, RING_SIZE, RING_SIZE, l.dangerStartAngle, l.dangerArc);
+            g2.drawArc(ringX, ringY, RING_SIZE, RING_SIZE, (int) l.angle, l.dangerArc);
+            g2.setColor(new Color(255, 130, 130));
+            g2.drawArc(ringX - 1, ringY - 1, RING_SIZE, RING_SIZE, (int) l.angle, Math.max(8, l.dangerArc / 3));
         }
         g2.setStroke(oldStroke);
 
@@ -326,6 +336,11 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
 
     @Override public void actionPerformed(ActionEvent e) {
         updateBallPhysics();
+        if (scene == Scene.GAME && !paused && !gameOver && !win) {
+            for (Layer l : layers) {
+                l.angle = (l.angle + l.rotationSpeed) % 360;
+            }
+        }
         repaint();
     }
     @Override public void mousePressed(MouseEvent e) {}
