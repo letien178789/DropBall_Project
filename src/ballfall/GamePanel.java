@@ -45,6 +45,7 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
     private final GameButton menuLevel = new GameButton(WIDTH/2 - 140, 450, 280, 70, "Level");
     private final GameButton menuSetting = new GameButton(WIDTH/2 - 140, 540, 280, 70, "Setting");
     private final GameButton replayBtn = new GameButton(WIDTH / 2 - 100, HEIGHT / 2 + 20, 200, 48, "Replay");
+    private final GameButton nextLevelBtn = new GameButton(WIDTH / 2 - 120, HEIGHT / 2 + 20, 240, 48, "Next Level");
 
     private final GameButton backBtn = new GameButton(20, 20, 90, 38, "Back");
     private final List<GameButton> levelButtons = new ArrayList<>();
@@ -274,8 +275,16 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
         g2.setColor(System.currentTimeMillis() < invincibleUntil ? new Color(255, 210, 50) : new Color(240, 240, 245));
         g2.fillOval(centerX - ballR, ballY - ballR, ballR * 2, ballR * 2);
 
+        g2.setColor(new Color(25, 30, 45, 220));
+        g2.fillRoundRect(20, 16, 170, 46, 14, 14);
+        g2.setColor(new Color(170, 190, 255));
+        g2.drawRoundRect(20, 16, 170, 46, 14, 14);
         g2.setColor(Color.WHITE);
-        g2.drawString("Level " + currentLevel + " | Broken " + layersBroken, 20, 35);
+        g2.setFont(new Font("Arial", Font.BOLD, 22));
+        g2.drawString("LEVEL " + currentLevel, 42, 45);
+
+        g2.setFont(new Font("Arial", Font.PLAIN, 18));
+        g2.drawString("Broken: " + layersBroken, 220, 42);
         pauseBtn.draw(g2);
 
         if (System.currentTimeMillis() < invincibleUntil) {
@@ -287,7 +296,10 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
             overlay(g2, "GAME OVER", "M: level menu");
             replayBtn.draw(g2);
         }
-        if (win) overlay(g2, "YOU WIN", "N: next level | M: level menu");
+        if (win) {
+            overlay(g2, "YOU WIN", "M: level menu");
+            nextLevelBtn.draw(g2);
+        }
         if (paused) {
             g2.setColor(new Color(0, 0, 0, 160)); g2.fillRect(0, 0, WIDTH, HEIGHT);
             g2.setColor(Color.WHITE); g2.drawString("Paused", WIDTH / 2 - 30, 260);
@@ -316,6 +328,8 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
         } else {
             if (gameOver && replayBtn.clicked(p)) {
                 resetLevel(currentLevel);
+            } else if (win && nextLevelBtn.clicked(p)) {
+                resetLevel(Math.min(10, currentLevel + 1));
             } else if (paused) {
                 if (resumeBtn.clicked(p)) paused = false;
                 else if (pauseSettingBtn.clicked(p)) setScene(Scene.SETTING);
