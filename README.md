@@ -33,3 +33,14 @@ Game sẽ tạo `save_state.properties` để lưu:
 - `last_level`
 - `bgm_volume`
 - `sfx_volume`
+
+## Cập nhật mới
+
+- Khung game ngang: **1920 x 1080**.
+- Nhạc nền theo màn:
+  - `MB1.mp3` cho Home
+  - `MB2.mp3` cho Level/Setting
+  - `MB3.mp3` cho Game
+
+> Đặt các file `MB1.mp3`, `MB2.mp3`, `MB3.mp3` tại thư mục gốc project.
+> Phát nhạc dùng JavaFX runtime (nếu máy có JavaFX). Nếu không có JavaFX, game vẫn chạy nhưng bỏ qua nhạc.

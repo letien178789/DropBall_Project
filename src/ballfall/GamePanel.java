@@ -9,8 +9,8 @@ import java.util.List;
 import java.util.Random;
 
 public class GamePanel extends JPanel implements MouseListener, KeyListener, ActionListener {
-    public static final int WIDTH = 480;
-    public static final int HEIGHT = 800;
+    public static final int WIDTH = 1920;
+    public static final int HEIGHT = 1080;
 
     private Scene scene = Scene.MENU;
     private final SettingsData settings = new SettingsData();
@@ -41,9 +41,9 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
     private final GameButton pauseSettingBtn = new GameButton(WIDTH / 2 - 100, 360, 200, 48, "Setting");
     private final GameButton pauseExitBtn = new GameButton(WIDTH / 2 - 100, 420, 200, 48, "Exit");
 
-    private final GameButton menuPlay = new GameButton(140, 300, 200, 52, "Play");
-    private final GameButton menuLevel = new GameButton(140, 370, 200, 52, "Level");
-    private final GameButton menuSetting = new GameButton(140, 440, 200, 52, "Setting");
+    private final GameButton menuPlay = new GameButton(WIDTH/2 - 140, 360, 280, 70, "Play");
+    private final GameButton menuLevel = new GameButton(WIDTH/2 - 140, 450, 280, 70, "Level");
+    private final GameButton menuSetting = new GameButton(WIDTH/2 - 140, 540, 280, 70, "Setting");
     private final GameButton replayBtn = new GameButton(WIDTH / 2 - 100, HEIGHT / 2 + 20, 200, 48, "Replay");
 
     private final GameButton backBtn = new GameButton(20, 20, 90, 38, "Back");
@@ -52,6 +52,8 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
     private BufferedImage bgHome;
     private BufferedImage bgMenu;
     private BufferedImage bgGame;
+    private final MusicManager musicManager = new MusicManager();
+
 
     public GamePanel() {
         setPreferredSize(new Dimension(WIDTH, HEIGHT));
@@ -70,6 +72,7 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
             levelButtons.add(new GameButton(130 + (i % 2) * 120, y - (i % 2) * 24, 100, 44, "Level " + (i + 1)));
         }
 
+        setScene(Scene.MENU);
         new Timer(16, this).start();
     }
 
@@ -200,9 +203,16 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
         }
     }
 
+    private void setScene(Scene nextScene) {
+        this.scene = nextScene;
+        if (nextScene == Scene.MENU) musicManager.playLoop("MB1.mp3");
+        else if (nextScene == Scene.LEVEL_MENU || nextScene == Scene.SETTING) musicManager.playLoop("MB2.mp3");
+        else if (nextScene == Scene.GAME) musicManager.playLoop("MB3.mp3");
+    }
+
     private void drawMenu(Graphics2D g2) {
         drawBackground(g2, bgHome, new Color(12, 14, 24));
-        g2.setColor(Color.WHITE); g2.setFont(new Font("Arial", Font.BOLD, 48)); g2.drawString("BALL FALL", 120, 150);
+        g2.setColor(Color.WHITE); g2.setFont(new Font("Arial", Font.BOLD, 96)); g2.drawString("BALL FALL", WIDTH/2 - 260, 180);
         g2.setFont(new Font("Arial", Font.PLAIN, 20));
         menuPlay.draw(g2); menuLevel.draw(g2); menuSetting.draw(g2);
     }
@@ -294,22 +304,22 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
     @Override public void mouseClicked(MouseEvent e) {
         Point p = e.getPoint();
         if (scene == Scene.MENU) {
-            if (menuPlay.clicked(p)) { resetLevel(progress.lastLevel); scene = Scene.GAME; }
-            else if (menuLevel.clicked(p)) scene = Scene.LEVEL_MENU;
-            else if (menuSetting.clicked(p)) scene = Scene.SETTING;
+            if (menuPlay.clicked(p)) { resetLevel(progress.lastLevel); setScene(Scene.GAME); }
+            else if (menuLevel.clicked(p)) setScene(Scene.LEVEL_MENU);
+            else if (menuSetting.clicked(p)) setScene(Scene.SETTING);
         } else if (scene == Scene.LEVEL_MENU) {
-            if (backBtn.clicked(p)) scene = Scene.MENU;
-            for (int i = 0; i < levelButtons.size(); i++) if (levelButtons.get(i).clicked(p)) { resetLevel(i + 1); scene = Scene.GAME; }
+            if (backBtn.clicked(p)) setScene(Scene.MENU);
+            for (int i = 0; i < levelButtons.size(); i++) if (levelButtons.get(i).clicked(p)) { resetLevel(i + 1); setScene(Scene.GAME); }
         } else if (scene == Scene.SETTING) {
-            if (backBtn.clicked(p)) scene = Scene.MENU;
+            if (backBtn.clicked(p)) setScene(Scene.MENU);
             updateSlider(p);
         } else {
             if (gameOver && replayBtn.clicked(p)) {
                 resetLevel(currentLevel);
             } else if (paused) {
                 if (resumeBtn.clicked(p)) paused = false;
-                else if (pauseSettingBtn.clicked(p)) scene = Scene.SETTING;
-                else if (pauseExitBtn.clicked(p)) { paused = false; scene = Scene.LEVEL_MENU; }
+                else if (pauseSettingBtn.clicked(p)) setScene(Scene.SETTING);
+                else if (pauseExitBtn.clicked(p)) { paused = false; setScene(Scene.LEVEL_MENU); }
             } else {
                 if (pauseBtn.clicked(p)) paused = true;
                 else hitAction();
@@ -328,7 +338,7 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
         if (scene == Scene.GAME) {
             if (e.getKeyCode() == KeyEvent.VK_SPACE) hitAction();
             else if (e.getKeyCode() == KeyEvent.VK_R && gameOver) resetLevel(currentLevel);
-            else if (e.getKeyCode() == KeyEvent.VK_M && (gameOver || win)) scene = Scene.LEVEL_MENU;
+            else if (e.getKeyCode() == KeyEvent.VK_M && (gameOver || win)) setScene(Scene.LEVEL_MENU);
             else if (e.getKeyCode() == KeyEvent.VK_N && win) resetLevel(Math.min(10, currentLevel + 1));
         }
         repaint();
