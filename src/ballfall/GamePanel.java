@@ -132,10 +132,10 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
 
         layers.clear();
         int dangerArc = Math.min(36 + lv * 6, 120);
-        int total = 18 + lv * 3;
-        int startY = 220;
+        int total = 4 + Math.min(2, lv / 4); // 4-6 layers only
+        int startY = 260;
         for (int i = 0; i < total; i++) {
-            int y = startY + i * 18; // stacked, almost no gap
+            int y = startY + i * 14; // no gap stacking
             double startAngle = random.nextInt(360);
             double speed = 0.5 + (currentLevel * 0.08) + random.nextDouble() * 0.4;
             layers.add(new Layer(y, dangerArc, randomPBColor(), startAngle, speed));
@@ -169,13 +169,9 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
         return HIT_ANGLE >= start || HIT_ANGLE <= end;
     }
 
-    private void hitAction() {
-        if (gameOver || paused || win) return;
-        dropping = true;
-        ballVelocity += 4.5;
-
+    private void resolveCurrentLayerInteraction() {
         Layer l = nearestLayer();
-        if (l == null) return;
+        if (l == null || gameOver || win) return;
 
         long now = System.currentTimeMillis();
         boolean dangerHit = isDangerAtHit(l);
@@ -200,12 +196,19 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
             } else {
                 targetBallY = layers.get(currentLayerIndex).y - 70;
                 dropping = true;
-                ballVelocity = 5.5;
+                ballVelocity = 4.0;
             }
         } else {
             gameOver = true;
         }
     }
+
+    private void hitAction() {
+        if (gameOver || paused || win) return;
+        dropping = true;
+        ballVelocity += 3.5;
+    }
+
 
     private void updateBallPhysics() {
         if (scene != Scene.GAME || paused || gameOver || win) return;
@@ -215,6 +218,7 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
             ballY += (int) ballVelocity;
             if (ballY >= targetBallY) {
                 ballY = targetBallY;
+                resolveCurrentLayerInteraction();
                 ballVelocity = -6.5; // bounce up
                 dropping = false;
             }
@@ -290,14 +294,15 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
 
         GradientPaint colGradient = new GradientPaint(centerX - 18, 40, new Color(245,245,245), centerX + 18, 40, new Color(195,195,195));
         g2.setPaint(colGradient);
-        g2.fillRoundRect(centerX - 25, 40, 50, HEIGHT - 70, 18, 18);
+        g2.fillRoundRect(centerX - 25, 70, 50, 420, 18, 18);
         g2.setColor(new Color(255,255,255,130));
-        g2.fillRoundRect(centerX - 18, 48, 10, HEIGHT - 95, 8, 8);
+        g2.fillRoundRect(centerX - 18, 82, 10, 380, 8, 8);
 
         long nowMs = System.currentTimeMillis();
         int idx = 0;
-        for (Layer l : layers) {
-            int ringW = 150 - (idx * 2);
+        for (int iLayer = currentLayerIndex; iLayer < layers.size(); iLayer++) {
+            Layer l = layers.get(iLayer);
+            int ringW = 170 - (idx * 3);
             int ringH = 58 - idx; // tilt 30~40 deg via flattened ellipse
             ringW = Math.max(110, ringW);
             ringH = Math.max(40, ringH);
@@ -426,7 +431,8 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
     @Override public void actionPerformed(ActionEvent e) {
         updateBallPhysics();
         if (scene == Scene.GAME && !paused && !gameOver && !win) {
-            for (Layer l : layers) {
+            for (int iLayer = currentLayerIndex; iLayer < layers.size(); iLayer++) {
+            Layer l = layers.get(iLayer);
                 l.angle = (l.angle + l.rotationSpeed) % 360;
             }
         }
