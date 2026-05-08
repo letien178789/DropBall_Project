@@ -289,6 +289,32 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
         drawSlider(g2, "Effect sound", 360, settings.sfxVolume);
     }
 
+
+    private void draw3DRing(Graphics2D g2, int x, int y, int w, int h, Color pbColor, int dangerStart, int dangerArc) {
+        int thickness = Math.max(12, h / 3);
+
+        // Side wall (3D depth)
+        g2.setColor(new Color(26, 26, 26, 170));
+        g2.fillArc(x, y + thickness, w, h, 0, 360);
+
+        Stroke oldStroke = g2.getStroke();
+        g2.setStroke(new BasicStroke(thickness, BasicStroke.CAP_BUTT, BasicStroke.JOIN_ROUND));
+
+        // PB ring top
+        g2.setColor(pbColor.darker());
+        g2.drawArc(x + 1, y + 1, w, h, 0, 360);
+        g2.setColor(pbColor);
+        g2.drawArc(x, y, w, h, 0, 360);
+        g2.setColor(pbColor.brighter());
+        g2.drawArc(x - 1, y - 1, w, h, 210, 90);
+
+        // DB arc (danger)
+        g2.setColor(new Color(18, 18, 18));
+        g2.drawArc(x, y, w, h, dangerStart, dangerArc);
+
+        g2.setStroke(oldStroke);
+    }
+
     private void drawGame(Graphics2D g2) {
         drawBackground(g2, bgGame, new Color(15, 16, 28));
 
@@ -310,26 +336,7 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
             int ringX = centerX - ringW / 2;
             int ringY = l.y;
             double wobble = Math.sin(nowMs / 180.0 + idx * 0.5) * 1.1;
-            ringY += (int) wobble;
-
-            // slice body shadow (stacked no gap)
-            g2.setColor(new Color(28, 28, 28, 170));
-            g2.fillOval(ringX, ringY + 10, ringW, ringH);
-
-            Stroke oldStroke = g2.getStroke();
-            g2.setStroke(new BasicStroke(Math.max(10, (int)(ringH * 0.30f)), BasicStroke.CAP_BUTT, BasicStroke.JOIN_ROUND));
-
-            // PB ~70% fullness
-            g2.setColor(l.pbColor);
-            g2.drawArc(ringX, ringY, ringW, ringH, 0, 252);
-            g2.setColor(l.pbColor.brighter());
-            g2.drawArc(ringX, ringY - 1, ringW, ringH, 210, 80);
-
-            // DB segment
-            g2.setColor(new Color(16, 16, 16));
-            g2.drawArc(ringX, ringY, ringW, ringH, (int) l.angle, l.dangerArc);
-
-            g2.setStroke(oldStroke);
+            ringY += (int) wobble;            draw3DRing(g2, ringX, ringY, ringW, ringH, l.pbColor, (int) l.angle, l.dangerArc);
             idx++;
         }
         // Ball with bounce/squash effect
