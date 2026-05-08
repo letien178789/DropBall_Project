@@ -20,7 +20,7 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
 
     private int currentLevel = 1;
     private final int centerX = WIDTH / 2;
-    private final int baseBallY = HEIGHT - 110;
+    private final int baseBallY = 70;
     private final int ballR = 16;
     private int ballY = baseBallY;
     private double ballVelocity = 0;
@@ -119,10 +119,12 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
 
         layers.clear();
         int dangerArc = Math.min(36 + lv * 6, 120);
-        for (int i = 0; i < 12 + lv * 4; i++) {
-            int y = HEIGHT - 170 - i * 56;
+        int total = 18 + lv * 3;
+        int startY = 145;
+        for (int i = 0; i < total; i++) {
+            int y = startY + i * 18; // stacked, almost no gap
             double startAngle = random.nextInt(360);
-            double speed = 0.8 + (currentLevel * 0.12) + random.nextDouble() * 0.8;
+            double speed = 0.5 + (currentLevel * 0.08) + random.nextDouble() * 0.4;
             layers.add(new Layer(y, dangerArc, randomPBColor(), startAngle, speed));
         }
 
@@ -140,8 +142,8 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
 
     private Layer nearestLayer() {
         Layer best = null;
-        for (Layer l : layers) if (l.y < ballY && (best == null || l.y > best.y)) best = l;
-        return (best == null && !layers.isEmpty()) ? layers.get(0) : best;
+        for (Layer l : layers) if (l.y > ballY && (best == null || l.y < best.y)) best = l;
+        return (best == null && !layers.isEmpty()) ? layers.get(layers.size()-1) : best;
     }
 
     private boolean isDangerAtHit(Layer layer) {
@@ -156,7 +158,7 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
     private void hitAction() {
         if (gameOver || paused || win) return;
         dropping = true;
-        ballVelocity = 13;
+        ballVelocity += 4.5;
 
         Layer l = nearestLayer();
         if (l == null) return;
@@ -191,16 +193,20 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
         if (scene != Scene.GAME || paused || gameOver || win) return;
 
         if (dropping) {
+            ballVelocity += 0.8;
             ballY += (int) ballVelocity;
-            ballVelocity -= 1.3;
-            if (ballY >= baseBallY) {
+            if (ballY > HEIGHT - 45) {
                 ballY = baseBallY;
+                ballVelocity = 2;
                 dropping = false;
-                ballVelocity = 0;
             }
         } else {
-            double t = System.currentTimeMillis() / 140.0;
-            ballY = baseBallY + (int) (Math.sin(t) * 8);
+            ballVelocity += 0.35;
+            ballY += (int) ballVelocity;
+            if (ballY > HEIGHT - 45) {
+                ballY = baseBallY;
+                ballVelocity = 1.5;
+            }
         }
     }
 
@@ -267,37 +273,36 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
         long nowMs = System.currentTimeMillis();
         int idx = 0;
         for (Layer l : layers) {
-            double depth = Math.max(0.55, Math.min(1.0, (double) l.y / HEIGHT + 0.35));
-            double wobble = Math.sin(nowMs / 140.0 + idx * 0.7) * 2.4;
-            int ringSize = (int) ((120 * depth) + wobble);
-            int ringX = centerX - ringSize / 2;
-            int ringY = l.y - ringSize / 2 + (int) (Math.cos(nowMs / 180.0 + idx) * 1.3);
+            int ringW = 220 - (idx * 4);
+            int ringH = 90 - (idx * 2); // tilt 30~40 deg via flattened ellipse
+            ringW = Math.max(88, ringW);
+            ringH = Math.max(34, ringH);
 
-            // side wall (3D stack)
-            g2.setColor(new Color(38, 38, 38));
-            g2.fillOval(ringX - 3, ringY + 6, ringSize + 6, 16);
+            int ringX = centerX - ringW / 2;
+            int ringY = l.y;
+            double wobble = Math.sin(nowMs / 180.0 + idx * 0.5) * 1.1;
+            ringY += (int) wobble;
+
+            // slice body shadow (stacked no gap)
+            g2.setColor(new Color(28, 28, 28, 170));
+            g2.fillOval(ringX, ringY + 10, ringW, ringH);
 
             Stroke oldStroke = g2.getStroke();
-            g2.setStroke(new BasicStroke(14, BasicStroke.CAP_BUTT, BasicStroke.JOIN_ROUND));
+            g2.setStroke(new BasicStroke(Math.max(10, (int)(ringH * 0.30f)), BasicStroke.CAP_BUTT, BasicStroke.JOIN_ROUND));
 
-            // P.B ring
-            g2.setColor(l.pbColor.darker());
-            g2.drawArc(ringX + 1, ringY + 1, ringSize, ringSize, 0, 360);
+            // PB ~70% fullness
             g2.setColor(l.pbColor);
-            g2.drawArc(ringX, ringY, ringSize, ringSize, 0, 360);
-            g2.setColor(new Color(255, 250, 120, 180));
-            g2.drawArc(ringX - 1, ringY - 1, ringSize, ringSize, 220, 90);
+            g2.drawArc(ringX, ringY, ringW, ringH, 0, 252);
+            g2.setColor(l.pbColor.brighter());
+            g2.drawArc(ringX, ringY - 1, ringW, ringH, 210, 80);
 
-            // D.B segment (dark like reference)
-            g2.setColor(new Color(18, 18, 18));
-            g2.drawArc(ringX, ringY, ringSize, ringSize, (int) l.angle, l.dangerArc);
-            g2.setColor(new Color(80, 80, 80));
-            g2.drawArc(ringX + 1, ringY + 1, ringSize, ringSize, (int) l.angle, Math.max(8, l.dangerArc / 2));
+            // DB segment
+            g2.setColor(new Color(16, 16, 16));
+            g2.drawArc(ringX, ringY, ringW, ringH, (int) l.angle, l.dangerArc);
 
             g2.setStroke(oldStroke);
             idx++;
         }
-
         // Ball with bounce/squash effect
         double speedAbs = Math.abs(ballVelocity);
         double squash = Math.min(0.35, speedAbs / 30.0);
