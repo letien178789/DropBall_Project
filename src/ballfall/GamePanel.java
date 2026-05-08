@@ -25,6 +25,8 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
     private int ballY = baseBallY;
     private double ballVelocity = 0;
     private boolean dropping = false;
+    private int currentLayerIndex = 0;
+    private int targetBallY = 70;
 
     private int layersBroken = 0;
     private int combo = 0;
@@ -131,7 +133,7 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
         layers.clear();
         int dangerArc = Math.min(36 + lv * 6, 120);
         int total = 18 + lv * 3;
-        int startY = 145;
+        int startY = 220;
         for (int i = 0; i < total; i++) {
             int y = startY + i * 18; // stacked, almost no gap
             double startAngle = random.nextInt(360);
@@ -146,15 +148,16 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
         paused = false;
         gameOver = false;
         win = false;
+        currentLayerIndex = 0;
+        targetBallY = layers.isEmpty() ? baseBallY : layers.get(0).y - 70;
         ballY = baseBallY;
         ballVelocity = 0;
         dropping = false;
     }
 
     private Layer nearestLayer() {
-        Layer best = null;
-        for (Layer l : layers) if (l.y > ballY && (best == null || l.y < best.y)) best = l;
-        return (best == null && !layers.isEmpty()) ? layers.get(layers.size()-1) : best;
+        if (currentLayerIndex < 0 || currentLayerIndex >= layers.size()) return null;
+        return layers.get(currentLayerIndex);
     }
 
     private boolean isDangerAtHit(Layer layer) {
@@ -178,7 +181,6 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
         boolean dangerHit = isDangerAtHit(l);
 
         if (!dangerHit || now < invincibleUntil) {
-            layers.remove(l);
             layersBroken++;
             combo = (now - lastBreakMs <= 450) ? combo + 1 : 1;
             lastBreakMs = now;
@@ -188,12 +190,17 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
                 combo = 0;
             }
 
-            if (layers.isEmpty()) {
+            currentLayerIndex++;
+            if (currentLayerIndex >= layers.size()) {
                 win = true;
                 if (currentLevel < 10) {
                     progress.lastLevel = currentLevel + 1;
                     SaveManager.save(settings, progress);
                 }
+            } else {
+                targetBallY = layers.get(currentLayerIndex).y - 70;
+                dropping = true;
+                ballVelocity = 5.5;
             }
         } else {
             gameOver = true;
@@ -204,19 +211,25 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
         if (scene != Scene.GAME || paused || gameOver || win) return;
 
         if (dropping) {
-            ballVelocity += 0.8;
+            ballVelocity += 0.55;
             ballY += (int) ballVelocity;
-            if (ballY > HEIGHT - 45) {
-                ballY = baseBallY;
-                ballVelocity = 2;
+            if (ballY >= targetBallY) {
+                ballY = targetBallY;
+                ballVelocity = -6.5; // bounce up
                 dropping = false;
             }
         } else {
-            ballVelocity += 0.35;
-            ballY += (int) ballVelocity;
-            if (ballY > HEIGHT - 45) {
-                ballY = baseBallY;
-                ballVelocity = 1.5;
+            // small bounce settle
+            if (ballVelocity < 0) {
+                ballY += (int) ballVelocity;
+                ballVelocity += 0.65;
+                if (ballY > targetBallY) {
+                    ballY = targetBallY;
+                    ballVelocity = 0;
+                }
+            } else {
+                double t = System.currentTimeMillis() / 180.0;
+                ballY = targetBallY + (int) (Math.sin(t) * 2.0);
             }
         }
     }
@@ -277,17 +290,17 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
 
         GradientPaint colGradient = new GradientPaint(centerX - 18, 40, new Color(245,245,245), centerX + 18, 40, new Color(195,195,195));
         g2.setPaint(colGradient);
-        g2.fillRoundRect(centerX - 18, 30, 36, HEIGHT - 50, 18, 18);
+        g2.fillRoundRect(centerX - 25, 40, 50, HEIGHT - 70, 18, 18);
         g2.setColor(new Color(255,255,255,130));
-        g2.fillRoundRect(centerX - 13, 35, 7, HEIGHT - 70, 8, 8);
+        g2.fillRoundRect(centerX - 18, 48, 10, HEIGHT - 95, 8, 8);
 
         long nowMs = System.currentTimeMillis();
         int idx = 0;
         for (Layer l : layers) {
-            int ringW = 220 - (idx * 4);
-            int ringH = 90 - (idx * 2); // tilt 30~40 deg via flattened ellipse
-            ringW = Math.max(88, ringW);
-            ringH = Math.max(34, ringH);
+            int ringW = 150 - (idx * 2);
+            int ringH = 58 - idx; // tilt 30~40 deg via flattened ellipse
+            ringW = Math.max(110, ringW);
+            ringH = Math.max(40, ringH);
 
             int ringX = centerX - ringW / 2;
             int ringY = l.y;
