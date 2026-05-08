@@ -9,8 +9,8 @@ import java.util.List;
 import java.util.Random;
 
 public class GamePanel extends JPanel implements MouseListener, KeyListener, ActionListener {
-    public static final int WIDTH = 640;
-    public static final int HEIGHT = 360;
+    public static final int WIDTH = 800;
+    public static final int HEIGHT = 1200;
 
     private Scene scene = Scene.MENU;
     private final SettingsData settings = new SettingsData();
@@ -41,9 +41,9 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
     private final GameButton pauseSettingBtn = new GameButton(WIDTH / 2 - 100, 360, 200, 48, "Setting");
     private final GameButton pauseExitBtn = new GameButton(WIDTH / 2 - 100, 420, 200, 48, "Exit");
 
-    private final GameButton menuPlay = new GameButton(WIDTH/2 - 90, 120, 180, 42, "Play");
-    private final GameButton menuLevel = new GameButton(WIDTH/2 - 90, 170, 180, 42, "Level");
-    private final GameButton menuSetting = new GameButton(WIDTH/2 - 90, 220, 180, 42, "Setting");
+    private final GameButton menuPlay = new GameButton(WIDTH/2 - 110, 360, 220, 56, "Play");
+    private final GameButton menuLevel = new GameButton(WIDTH/2 - 110, 430, 220, 56, "Level");
+    private final GameButton menuSetting = new GameButton(WIDTH/2 - 110, 500, 220, 56, "Setting");
     private final GameButton replayBtn = new GameButton(WIDTH / 2 - 100, HEIGHT / 2 + 20, 200, 48, "Replay");
     private final GameButton nextLevelBtn = new GameButton(WIDTH / 2 - 120, HEIGHT / 2 + 20, 240, 48, "Next Level");
 
@@ -99,8 +99,19 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
     }
 
     private void drawBackground(Graphics2D g2, BufferedImage img, Color fallback) {
-        if (img != null) g2.drawImage(img, 0, 0, WIDTH, HEIGHT, null);
-        else { g2.setColor(fallback); g2.fillRect(0, 0, WIDTH, HEIGHT); }
+        if (img == null) {
+            g2.setColor(fallback);
+            g2.fillRect(0, 0, WIDTH, HEIGHT);
+            return;
+        }
+
+        double scale = Math.max((double) WIDTH / img.getWidth(), (double) HEIGHT / img.getHeight());
+        int drawW = (int) Math.ceil(img.getWidth() * scale);
+        int drawH = (int) Math.ceil(img.getHeight() * scale);
+        int dx = (WIDTH - drawW) / 2;
+        int dy = (HEIGHT - drawH) / 2;
+
+        g2.drawImage(img, dx, dy, drawW, drawH, null);
     }
 
     private Color randomPBColor() {
@@ -232,7 +243,7 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
 
     private void drawMenu(Graphics2D g2) {
         drawBackground(g2, bgHome, new Color(12, 14, 24));
-        g2.setColor(Color.WHITE); g2.setFont(new Font("Arial", Font.BOLD, 44)); g2.drawString("BALL FALL", WIDTH/2 - 120, 80);
+        g2.setColor(Color.WHITE); g2.setFont(new Font("Arial", Font.BOLD, 60)); g2.drawString("BALL FALL", WIDTH/2 - 165, 150);
         g2.setFont(new Font("Arial", Font.PLAIN, 20));
         menuPlay.draw(g2); menuLevel.draw(g2); menuSetting.draw(g2);
     }
