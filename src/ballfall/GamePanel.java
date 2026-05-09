@@ -135,7 +135,7 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
         int total = 4 + Math.min(2, lv / 4); // 4-6 layers only
         int startY = 260;
         for (int i = 0; i < total; i++) {
-            int y = startY + i * 14; // no gap stacking
+            int y = startY + i * 16; // uniform stacked sleeves
             double startAngle = random.nextInt(360);
             double speed = 0.5 + (currentLevel * 0.08) + random.nextDouble() * 0.4;
             layers.add(new Layer(y, dangerArc, randomPBColor(), startAngle, speed));
@@ -328,15 +328,14 @@ public class GamePanel extends JPanel implements MouseListener, KeyListener, Act
         int idx = 0;
         for (int iLayer = currentLayerIndex; iLayer < layers.size(); iLayer++) {
             Layer l = layers.get(iLayer);
-            int ringW = 170 - (idx * 3);
-            int ringH = 58 - idx; // tilt 30~40 deg via flattened ellipse
-            ringW = Math.max(110, ringW);
-            ringH = Math.max(40, ringH);
+            int ringW = 156;
+            int ringH = 52; // uniform sleeve size
 
             int ringX = centerX - ringW / 2;
-            int ringY = l.y;
-            double wobble = Math.sin(nowMs / 180.0 + idx * 0.5) * 1.1;
-            ringY += (int) wobble;            draw3DRing(g2, ringX, ringY, ringW, ringH, l.pbColor, (int) l.angle, l.dangerArc);
+            int ringY = 260 + idx * 16; // glued stack, no gap
+            double wobble = Math.sin(nowMs / 220.0 + idx * 0.5) * 0.4;
+            ringY += (int) wobble;
+            draw3DRing(g2, ringX, ringY, ringW, ringH, l.pbColor, (int) l.angle, l.dangerArc);
             idx++;
         }
         // Ball with bounce/squash effect
